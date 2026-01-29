@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "296950722100",
+    "project_id": "erium-ae95f",
+    "storage_bucket": "erium-ae95f.firebasestorage.app",
+    "firebase_url": "https://erium-ae95f-default-rtdb.firebaseio.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:296950722100:android:fecd35656a2d9f750ee461",
+        "android_client_info": {
+          "package_name": "fr.erium.erium"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCLdgyGLfHivzr6wxHmYNv6evXn-5Bfb8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
