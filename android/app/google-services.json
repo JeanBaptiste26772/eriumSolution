@@ -1,27 +1,45 @@
 {
   "project_info": {
-    "project_number": "296950722100",
+    "project_number": "879794842097",
+    "firebase_url": "https://erium-ae95f-default-rtdb.firebaseio.com",
     "project_id": "erium-ae95f",
-    "storage_bucket": "erium-ae95f.firebasestorage.app",
-    "firebase_url": "https://erium-ae95f-default-rtdb.firebaseio.com"
+    "storage_bucket": "erium-ae95f.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:296950722100:android:fecd35656a2d9f750ee461",
+        "mobilesdk_app_id": "1:879794842097:android:96f874c110b6e6318d3c50",
         "android_client_info": {
           "package_name": "fr.erium.erium"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "879794842097-2lfqc9d6i1s2i9g4hhgaeu7cpji2qe8i.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "fr.erium.erium",
+            "certificate_hash": "d865b4f9f3d857c3fc43c5ccd0a8d7106db856eb"
+          }
+        },
+        {
+          "client_id": "879794842097-0aeeclatpb4tdobfc5efdc5umt2ur1am.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyBCLdgyGLfHivzr6wxHmYNv6evXn-5Bfb8"
+          "current_key": "AIzaSyBsKFgliUxg0gbqZarBH9IcZ2Pfv1Au_xA"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "879794842097-0aeeclatpb4tdobfc5efdc5umt2ur1am.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

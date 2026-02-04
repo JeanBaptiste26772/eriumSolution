@@ -23,9 +23,6 @@ class _OuvrirVanneDialogState extends State<OuvrirVanneDialog> {
   bool _isLoading = false;
   String _errorMessage = '';
 
-  // PIN de test (tout à 0 pour confirmer)
-  final String _correctPIN = '0000';
-
   @override
   void dispose() {
     for (var controller in _pinControllers) {
@@ -41,6 +38,26 @@ class _OuvrirVanneDialogState extends State<OuvrirVanneDialog> {
     return _pinControllers.map((c) => c.text).join();
   }
 
+  /// Vérifie le PIN dans Firebase
+  Future<bool> _verifyPinFromFirebase(String enteredPin) async {
+    try {
+      final DatabaseReference pinRef =
+      FirebaseDatabase.instance.ref('settings/operator_pin');
+
+      final snapshot = await pinRef.get();
+
+      if (!snapshot.exists) {
+        return false;
+      }
+
+      final storedPin = snapshot.value as String;
+      return enteredPin == storedPin;
+    } catch (e) {
+      print('Erreur lors de la vérification du PIN: $e');
+      return false;
+    }
+  }
+
   Future<void> _handleConfirm() async {
     final pin = _getPinValue();
 
@@ -51,19 +68,23 @@ class _OuvrirVanneDialogState extends State<OuvrirVanneDialog> {
       return;
     }
 
-    if (pin != _correctPIN) {
-      setState(() {
-        _errorMessage = 'PIN incorrect. Veuillez réessayer.';
-      });
-      return;
-    }
-
     setState(() {
       _isLoading = true;
       _errorMessage = '';
     });
 
     try {
+      // Vérifier le PIN avec Firebase
+      final isPinCorrect = await _verifyPinFromFirebase(pin);
+
+      if (!isPinCorrect) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'PIN incorrect. Veuillez réessayer.';
+        });
+        return;
+      }
+
       String tankId = widget.tankId ?? 'oxygene';
 
       final DatabaseReference tankRef =

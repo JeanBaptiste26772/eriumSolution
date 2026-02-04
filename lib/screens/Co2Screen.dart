@@ -18,6 +18,7 @@ class Co2Screen extends StatefulWidget {
 class _CO2TankControlScreenState extends State<Co2Screen> {
   // Référence à Firebase Realtime Database
   final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref('tanks/co2');
+  final DatabaseReference _alertesRef = FirebaseDatabase.instance.ref('alertes');
 
   // Variables pour stocker les données
   double _pression = 0.0;
@@ -26,11 +27,13 @@ class _CO2TankControlScreenState extends State<Co2Screen> {
   String _etatVanne = 'inconnu';
   String _statut = 'Chargement...';
   bool _isLoading = true;
+  int _nombreAlertesNonAcquittees = 0;
 
   @override
   void initState() {
     super.initState();
     _setupRealtimeListener();
+    _setupAlertesListener();
   }
 
   // Écouter les changements en temps réel depuis Firebase
@@ -49,6 +52,38 @@ class _CO2TankControlScreenState extends State<Co2Screen> {
         });
       }
     });
+  }
+
+  // Écouter le nombre d'alertes non acquittées
+  void _setupAlertesListener() {
+    _alertesRef.onValue.listen(
+          (DatabaseEvent event) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+
+        if (mounted) {
+          if (data != null) {
+            int count = 0;
+            data.forEach((key, value) {
+              final alerte = Map<String, dynamic>.from(value);
+              if (alerte['resolu'] == false && alerte['acquittee'] == false) {
+                count++;
+              }
+            });
+
+            setState(() {
+              _nombreAlertesNonAcquittees = count;
+            });
+          } else {
+            setState(() {
+              _nombreAlertesNonAcquittees = 0;
+            });
+          }
+        }
+      },
+      onError: (error) {
+        print('Erreur alertes: $error');
+      },
+    );
   }
 
   @override
@@ -957,23 +992,56 @@ class _CO2TankControlScreenState extends State<Co2Screen> {
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            Icon(
-              icon,
-              color: isActive ? const Color(0xFF0A7AFF) : const Color(0xFF8E8E93),
-              size: 24,
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  color: isActive ? const Color(0xFF0A7AFF) : const Color(0xFF8E8E93),
+                  size: 24,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: isActive ? const Color(0xFF0A7AFF) : const Color(0xFF8E8E93),
+                    fontSize: 10,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                color: isActive ? const Color(0xFF0A7AFF) : const Color(0xFF8E8E93),
-                fontSize: 10,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+            // Badge pour les alertes
+            if (label == 'Alertes' && _nombreAlertesNonAcquittees > 0)
+              Positioned(
+                right: -4,
+                top: -4,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFF3B30),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    _nombreAlertesNonAcquittees > 9
+                        ? '9+'
+                        : '$_nombreAlertesNonAcquittees',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               ),
-            ),
           ],
         ),
       ),

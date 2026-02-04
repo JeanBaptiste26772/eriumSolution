@@ -8,31 +8,6 @@ const nodemailer = require("nodemailer");
 
 admin.initializeApp();
 
-// Configuration du transporteur email (Gmail - à adapter)
-// IMPORTANT: Configurez ces variables dans Firebase Functions Config
-// firebase functions:config:set gmail.email="votre-email@gmail.com"
-// gmail.password="votre-mot-de-passe-app"
-const gmailConfig = functions.config().gmail || {};
-const gmailEmail = gmailConfig.email || process.env.GMAIL_EMAIL || "";
-const gmailPassword = gmailConfig.password ||
-  process.env.GMAIL_PASSWORD || "";
-
-// Créer le transporteur seulement si les identifiants existent
-const mailTransport = gmailEmail && gmailPassword ?
-  nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: gmailEmail,
-      pass: gmailPassword,
-    },
-  }) : null;
-
-// Alternative avec SendGrid (recommandé pour production)
-/*
-const sgMail = require('@sendgrid/mail');
-sgMail.setApiKey(functions.config().sendgrid.key);
-*/
-
 // Fonction déclenchée lors de la création d'une nouvelle alerte
 exports.envoyerEmailAlerte = functions.database
     .ref("/alertes/{alerteId}")
@@ -46,6 +21,23 @@ exports.envoyerEmailAlerte = functions.database
           console.log("Alerte non critique, email non envoyé");
           return null;
         }
+
+        // Créer le transporteur ICI avec valeurs hardcodées en fallback
+        const gmailEmail = process.env.GMAIL_EMAIL ||
+                "jeanbaptisteouedraogo00@gmail.com";
+        const gmailPassword = process.env.GMAIL_PASSWORD ||
+                "";
+
+        console.log(`Tentative d'envoi avec email: ${gmailEmail}`);
+
+        // Créer le transporteur à chaque exécution
+        const mailTransport = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: gmailEmail,
+            pass: gmailPassword,
+          },
+        });
 
         // Récupérer les paramètres utilisateur
         const settingsSnapshot = await admin.database()
@@ -62,17 +54,10 @@ exports.envoyerEmailAlerte = functions.database
 
         // Vérifier si l'email est configuré
         const emailDestinataire = settings.emailNotifications;
-        if (!emailDestinataire || !emailDestinataire.includes("@")) {
-          console.log("Email destinataire non configuré ou invalide");
-          return null;
-        }
-
-        // Vérifier si le transporteur email est configuré
-        if (!mailTransport) {
-          console.error(
-              "Transporteur email non configuré. " +
-            "Exécutez: firebase functions:config:set " +
-            "gmail.email=XXX gmail.password=XXX",
+        if (!emailDestinataire ||
+                !emailDestinataire.includes("@")) {
+          console.log(
+              "Email destinataire non configuré ou invalide",
           );
           return null;
         }
@@ -135,15 +120,6 @@ exports.envoyerEmailAlerte = functions.database
                 color: #8e8e93;
                 font-size: 12px;
               }
-              .button {
-                display: inline-block;
-                background-color: #0A7AFF;
-                color: white;
-                padding: 12px 24px;
-                text-decoration: none;
-                border-radius: 8px;
-                margin-top: 20px;
-              }
             </style>
           </head>
           <body>
@@ -190,8 +166,8 @@ exports.envoyerEmailAlerte = functions.database
                 </div>
               </div>
 
-              <div style="background-color: #FFF3F2; padding: 15px;
-                border-radius: 8px; margin-top: 20px;">
+              <div style="background-color: #FFF3F2;
+                padding: 15px; border-radius: 8px; margin-top: 20px;">
                 <p style="margin: 0; color: #FF3B30;
                   font-weight: 600;">
                   ⚡ Action immédiate requise
@@ -246,7 +222,7 @@ Système de Supervision Erium Burkina
 
         console.log(
             `Email d'alerte envoyé à ${emailDestinataire} ` +
-          `pour l'alerte ${alerteId}`,
+                `pour l'alerte ${alerteId}`,
         );
 
         // Enregistrer l'envoi dans la base de données
@@ -259,61 +235,10 @@ Système de Supervision Erium Burkina
 
         return null;
       } catch (error) {
-        console.error("Erreur lors de l'envoi de l'email:", error);
-        return null;
-      }
-    });
-
-// Fonction alternative avec SendGrid (recommandé pour production)
-/*
-exports.envoyerEmailAlerteSendGrid = functions.database
-  .ref('/alertes/{alerteId}')
-  .onCreate(async (snapshot, context) => {
-    try {
-      const alerte = snapshot.val();
-      const alerteId = context.params.alerteId;
-
-      if (alerte.type !== 'CRITIQUE') {
-        return null;
-      }
-
-      const settingsSnapshot = await admin.database()
-        .ref('/settings')
-        .once('value');
-
-      const settings = settingsSnapshot.val();
-
-      if (!settings || !settings.alertesEmail ||
-        !settings.emailNotifications) {
-        console.log(
-          'Alertes par email désactivées ou email non configuré'
+        console.error(
+            "Erreur lors de l'envoi de l'email:",
+            error,
         );
         return null;
       }
-
-      const msg = {
-        to: settings.emailNotifications,
-        from: 'noreply@erium-burkina.com',
-        subject: `🚨 ALERTE CRITIQUE - ${alerte.titre}`,
-        html: // ... (même HTML que ci-dessus)
-      };
-
-      await sgMail.send(msg);
-
-      await admin.database()
-        .ref(`/alertes/${alerteId}`)
-        .update({
-          emailEnvoye: true,
-          dateEnvoiEmail: new Date().toISOString(),
-        });
-
-      console.log(
-        `Email envoyé via SendGrid à ${settings.emailNotifications}`
-      );
-      return null;
-    } catch (error) {
-      console.error('Erreur SendGrid:', error);
-      return null;
-    }
-  });
-*/
+    });

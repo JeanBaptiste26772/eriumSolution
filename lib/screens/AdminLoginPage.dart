@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'AssistanceSecuriteScreen.dart';
+import 'OxygeneScreen.dart';
 
 class AdminLoginPage extends StatefulWidget {
   const AdminLoginPage({Key? key}) : super(key: key);
@@ -12,13 +14,108 @@ class AdminLoginPage extends StatefulWidget {
 class _AdminLoginPageState extends State<AdminLoginPage> {
   final TextEditingController _identifiantController = TextEditingController();
   final TextEditingController _motDePasseController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _identifiantController.dispose();
     _motDePasseController.dispose();
     super.dispose();
+  }
+
+  // Fonction pour se connecter avec Firebase Auth
+  Future<void> _seConnecter() async {
+    final identifiant = _identifiantController.text.trim();
+    final motDePasse = _motDePasseController.text.trim();
+
+    // Vérifier que les champs ne sont pas vides
+    if (identifiant.isEmpty || motDePasse.isEmpty) {
+      _afficherErreur('Veuillez remplir tous les champs');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Convertir l'identifiant en email pour Firebase Auth
+      final email = '$identifiant@erium.local';
+
+      // Tenter de se connecter avec Firebase Auth
+      await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: motDePasse,
+      );
+
+      // Connexion réussie - Naviguer vers l'écran principal
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const OxygeneScreen(),
+          ),
+              (route) => false, // Supprime toute la pile de navigation
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      // Gérer les erreurs de connexion
+      String messageErreur;
+
+      switch (e.code) {
+        case 'user-not-found':
+          messageErreur = 'Identifiant incorrect';
+          break;
+        case 'wrong-password':
+          messageErreur = 'Mot de passe incorrect';
+          break;
+        case 'invalid-credential':
+          messageErreur = 'Identifiant incorrect';
+          break;
+        case 'invalid-email':
+          messageErreur = 'Format d\'identifiant invalide';
+          break;
+        case 'user-disabled':
+          messageErreur = 'Ce compte a été désactivé';
+          break;
+        case 'too-many-requests':
+          messageErreur = 'Trop de tentatives. Réessayez plus tard';
+          break;
+        case 'network-request-failed':
+          messageErreur = 'Erreur réseau. Vérifiez votre connexion';
+          break;
+        default:
+          messageErreur = 'Erreur de connexion: ${e.message}';
+      }
+
+      _afficherErreur(messageErreur);
+    } catch (e) {
+      _afficherErreur('Une erreur inattendue s\'est produite');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  // Afficher un message d'erreur
+  void _afficherErreur(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFFFF3B30),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -109,6 +206,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                       const SizedBox(height: 12),
                       TextField(
                         controller: _identifiantController,
+                        enabled: !_isLoading,
                         decoration: InputDecoration(
                           hintText: "admin_sys_01",
                           hintStyle: TextStyle(
@@ -156,7 +254,9 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                       const SizedBox(height: 12),
                       TextField(
                         controller: _motDePasseController,
+                        enabled: !_isLoading,
                         obscureText: _obscurePassword,
+                        onSubmitted: (_) => _seConnecter(),
                         decoration: InputDecoration(
                           hintText: "••••••••••••",
                           hintStyle: TextStyle(
@@ -212,20 +312,26 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: () {
-                            // TODO: Implémenter la logique de connexion Firebase
-                            print("Identifiant: ${_identifiantController.text}");
-                            print("Mot de passe: ${_motDePasseController.text}");
-                          },
+                          onPressed: _isLoading ? null : _seConnecter,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF0B7FD9),
                             foregroundColor: Colors.white,
                             elevation: 0,
+                            disabledBackgroundColor: Colors.grey[300],
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text(
+                          child: _isLoading
+                              ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                              : const Text(
                             "Se connecter",
                             style: TextStyle(
                               fontSize: 18,
@@ -240,14 +346,15 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                       // Lien Mot de passe oublié
                       Center(
                         child: TextButton(
-                          onPressed: () {
+                          onPressed: _isLoading
+                              ? null
+                              : () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => const AssistanceSecuriteScreen(),
                               ),
                             );
-                            print("Mot de passe oublié");
                           },
                           child: const Text(
                             "Mot de passe oublié ?",

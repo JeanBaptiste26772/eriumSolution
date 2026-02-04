@@ -502,11 +502,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: TextButton(
                 onPressed: () {
-                  Navigator.push(
+                  Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const AdminLoginPage(),
                     ),
+                        (route) => false,
                   );
                 },
                 style: TextButton.styleFrom(
